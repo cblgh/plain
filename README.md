@@ -38,7 +38,7 @@ plain -h
 
 ## Concepts
 
-* The index file (think of a it like a sitemap, of sorts, or a root listicle)
+* The index file (think of it like a sitemap of sorts, or as a root listicle)
 * Listicles (lists of articles, defined by commands and operands)
 * Commands: symbols + operand (single, not plural)
 * Navigation
@@ -65,15 +65,17 @@ cc  CREATE_RSS       create rss feed for listicle
 Make plain your own by changing the command names (e.g. renaming `cc` -> `rss`) by editing the `symbols` file. The only
 restriction is that the new command name may contain no spaces.
 
+
+Currently some commands are only suitable for the index file, and some only for listicles.
 ```
 listicle only
-    cp  COPY_DIR         copy an entire directory to the web root, preserving the folder name ( not mandatory )
-    mv  REDIRECT         redirect the given url (by dumping a redirect page) to the current item ( not mandatory )
+    cp  COPY_DIR         copy an entire directory to the web root, preserving the folder name 
+    mv  REDIRECT         redirect the given url (by dumping a redirect page) to the current item
 index only
-    cf  PATH_SSG         path to a listicle file containing ssg input (e.g. articles) ( mandatory )
-    cc  CREATE_RSS       create rss feed for listicle ( mandatory )
-    nn  NAVIGATION_TITLE name navigation item & add to the main nav ( not mandatory )
-overlap
+    cf  PATH_SSG         path to a listicle file containing ssg input (e.g. articles) 
+    cc  CREATE_RSS       create rss feed for listicle 
+    nn  NAVIGATION_TITLE name navigation item & add to the main nav
+both types
     tt  TITLE            title
     bb  BRIEF            a one-line brief markdown description
     md  PATH_MD          path to markdown file containing a standalone article / page
