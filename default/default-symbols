@@ -1,0 +1,11 @@
+tt  TITLE            title
+bb  BRIEF            oneline brief markdown description
+md  PATH_MD          path to markdown file containing a standalone article / page
+ln  LINK             link to resource representing the described item
+ww  PATH_WWWROOT     set the final destination path in plain's webroot
+cf  PATH_SSG         path to a listicle file containing ssg input (e.g. articles)
+cp  COPY_DIR         copy an entire directory to the web root, preserving the folder name
+nn  NAVIGATION_TITLE name navigation item & add to the main nav
+mv  REDIRECT         redirect the given url (by dumping a redirect page) to the current item
+cc  CREATE_RSS       create rss feed for listicle
+//  SKIP             comment, skip parsing this line

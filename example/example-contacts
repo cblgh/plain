@@ -1,0 +1,17 @@
+// tt = title, bb = brief, ln = link, // = comment (skip)
+tt mastodon
+bb run yr own social!! 
+ln https://runyourown.social/
+
+tt email
+bb person-or-am-i@example.com
+
+tt code
+ln https://codeberg.com
+
+tt irc
+bb meet me in libera chat
+
+tt chat
+bb cool p2p chat
+ln https://cabal.chat

@@ -1,0 +1,18 @@
+// tt = title, bb = brief, ln = link, // = comment (skip)
+tt mastodon
+bb @cblgh@merveilles.town
+ln https://merveilles.town/@cblgh
+
+tt email
+bb cblgh atttttt cblgh.org
+
+tt github
+bb cblgh
+ln https://github.com/cblgh
+
+tt twitter
+bb cblgh
+ln https://twitter.com/cblgh
+
+tt irc
+bb cblgh in libera chat

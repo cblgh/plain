@@ -1,0 +1,24 @@
+// plain spec
+// 
+// tt   title (markdown parsed)
+// bb   one-line brief markdown description
+// md   path to markdown file, used to create new pages. copies md file to webroot
+// ln   creates a link on the page fragment (e.g. a title is converted to also be a link)
+// ww   declares path in webroot
+// cf   path containing more ssg input (e.g. articles). used to outline separate sections / list categories of content
+// nn   push to navigation bar with the defined nav title
+// cp   copy directory to webroot
+// //   a comment, skip this line entirely (note: must be on a new line)
+
+ww /
+tt # my website
+bb welcome to my net abode 
+// this includes the listicle `projects` which defines actual content that is inserted for the / route (defined by ww) 
+cf projects
+// set the navigation element to `home` for the index page
+nn home
+
+ww /
+tt ## Contact
+bb find me on the web
+cf contacts

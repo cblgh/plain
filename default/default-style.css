@@ -1,0 +1,250 @@
+/* @import url('inter-ui-web/inter-ui.css'); */
+:root {
+    --dark: #000;
+    --light: #fefefe;
+    --grey: #5d5d5d;
+    --white: #f2f2f2;
+    --code-bg: #111;
+    --time: 100ms;
+    --external: #ffe4b5;
+}
+
+/* Reset.css Courtesy of XXIIVV */
+*           { margin:0;padding:0;border:0;outline:0;text-decoration:none;font-weight:inherit;font-style:inherit;color:inherit;font-size:100%;font-family:inherit;vertical-align:baseline;border-collapse:collapse;border-spacing:0; -webkit-font-smoothing: antialiased;-moz-osx-font-smoothing: grayscale; scrollbar-width: thin; scrollbar-color: var(--light) var(--dark); }
+*:focus     { outline: none}
+::selection { background: #72dec2; opacity:1.0; color:#000; padding:10px; /* Safari */ }
+
+body { background:#000; overflow-x: hidden; transition: opacity 150ms; opacity: 1 !important}
+b { font-weight:bold; }
+i { font-style:italic; }
+a { cursor: pointer; }
+ul { list-style-position: outside; }
+hr { clear:both; }
+code { white-space: pre; color: var(--light); background: var(--dark); font-family: monospace; }
+svg { stroke-width: 10;stroke: white;stroke-linecap: round; }
+strong { font-weight: bold; }
+a code {
+    background: none;
+    color: white;
+    padding: 0;
+}
+
+/* end reset */
+
+/* main */
+html {
+    font-family: "Inter UI", sans-serif;
+    font-feature-settings: 'tnum' 1, "ss01" 1, "zero" 1; /* fixed-width numbers on, alternate number set on, dash through zero on */
+    background-color: var(--dark);
+    color: var(--light);
+    line-height: 1.5rem;
+}
+
+body {
+    display: grid;
+    grid-column-gap: 20px;
+
+    grid-template-columns: 1fr;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    overflow-y: scroll;
+    padding: 2rem;
+    background: black;
+    color: white;
+}
+
+header { margin-bottom: 1rem; }
+
+h1 {
+    padding: 1rem 0;
+    font-size: 2rem;
+    line-height: 2.75rem;
+    letter-spacing: -0.025em;
+}
+
+h2, h3 { line-height: 2.5rem; }
+
+h2 {
+    margin-top: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 400; 
+    color: hsl(0, 0%, 80%);
+}
+h2.listicle { margin-top: 1rem; }
+h2 + p { padding: 0.25rem 0; }
+
+h3 {
+    margin-top: 2rem;
+    font-size: 1.25rem;
+    color: hsl(0, 0%, 65%);
+}
+
+h4, h5, h6 {
+    margin: 0;
+    padding: 0;
+    line-height: inherit;
+    margin-top: 1rem;
+}
+
+h4 { font-weight: bold; }
+h5 { font-style: italic; }
+h1 + h2, h1 + h3, h2 + h3 { margin-top: 0; }
+h1 + h4 { margin-top: 2rem; }
+
+em { font-style: italic; }
+del { text-decoration: line-through; }
+
+a {
+    color: var(--white);
+    text-decoration: none;
+    -webkit-transition: opacity var(--time) ease-in-out;
+    -moz-transition: opacity var(--time) ease-in-out;
+    -ms-transition: opacity var(--time) ease-in-out;
+    -o-transition: opacity var(--time) ease-in-out;
+    transition: opacity var(--time) ease-in-out;
+    border-bottom: 1px dotted white;
+}
+a:hover { opacity: 0.7; }
+a:visited { color: var(--white); }
+a[href^="http://"], a[href^="https://"] {
+    color: var(--external);
+    border-bottom: none;
+}
+
+blockquote, pre {
+    padding: 0.5rem 2rem;
+    margin: 1rem 0;
+    border-left: var(--white) .1rem solid;
+    background: #0f0f0f;
+    width: 100%;
+    overflow: scroll;
+}
+
+pre {
+    background: var(--light);
+    border-left: unset;
+}
+
+code {
+    color: var(--code-bg);
+    background: var(--light);
+    padding: 0.25rem; 
+    padding-bottom: 0.15rem;
+    border-radius: 2px;
+    /* make entire contents selectable by one click */
+    -webkit-touch-callout: all;
+    -webkit-user-select: all;
+    -khtml-user-select: all;
+    -moz-user-select: all;
+    -ms-user-select: all;
+    user-select: all;
+}
+
+pre code {
+    border-style: dotted;
+    color: var(--dark);
+    padding: unset;
+    border-radius: unset;
+    background: unset;
+    -webkit-touch-callout: unset;
+    -webkit-user-select: unset;
+    -khtml-user-select: unset;
+    -moz-user-select: unset;
+    -ms-user-select: unset;
+    user-select: unset;
+}
+
+img {
+    padding: 1rem;
+    display: block;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+h1 + ul, h2 + ul, h3 + ul, 
+h1 + ol, h2 + ol, h3 + ol {
+    padding-top: 1rem;
+}
+
+ul, ol { margin-left: 1rem; }
+ul { list-style-image: url("../media/dot.svg"); }
+li > ul, li > ol { margin-left: 2rem; }
+
+p {
+    padding: .5rem 0;
+    text-align: justify;
+    hyphens: auto;
+}
+
+table {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+td, th {
+    padding: 0.5rem;
+    border: 1px white solid;
+}
+
+.visible { display: block; }
+
+/* ipad max-width */
+@media screen and (max-width: 768px) {
+    .content {
+        margin: 3rem auto 6rem auto;
+        width: 30rem;
+    }
+}
+
+.webring {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+    justify-self: right;
+}
+
+.webring img {
+    padding: 0;
+    margin: 0;
+}
+
+.spacer { height: 2rem; }
+
+.main-navigation {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 0.1rem;
+    column-gap: 1rem;
+    list-style: none;
+}
+
+@media screen and (max-width: 880px) {
+    body { max-width: 30rem; }
+}
+
+@media screen and (max-width: 500px) {
+    body { max-width: 19rem; }
+}
+
+/* IPHONE 5S/SE*/
+@media only screen 
+and (min-device-width : 320px) 
+and (max-device-width : 667px) {
+    html {
+        font-size: 12pt;
+        line-height: 1.5;
+    }
+
+    body { 
+        max-width: 19rem; 
+        margin: 1rem auto 6rem auto;
+        margin-top: 1rem !important;
+    }
+
+    a { border-bottom: 1px white solid; }
+}

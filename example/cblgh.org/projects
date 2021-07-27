@@ -1,0 +1,86 @@
+// tt = title, bb = brief, ln = link, // = comment (skip)
+
+tt articles
+bb articles i've written on various topics
+ln /articles
+
+tt cabal
+bb a peer-to-peer, off-grid, community-first, hackable chat platform
+ln https://cabal.chat
+
+tt datradio
+bb a peer-to-peer music platform. built with [beaker](https://beakerbrowser.com) and [dat](https://datproject.org)
+ln https://github.com/cblgh/datradio
+
+tt peer-to-peer ÖRESUND
+bb a peer-to-peer conference for the öresund region
+ln https://web.archive.org/web/20190916164400/http://p2p-oresund.org/
+
+tt lhs 
+bb a wikitrove of tutorials and links within the decentralized p2p arena
+ln https://lhs.nu/archive
+
+tt days
+bb a tiny site that shows this year in days
+ln https://days.cblgh.org
+
+tt tao
+bb a small service for displaying, and [api](https://tao.cblgh.org/endpoint/random) querying, chapters from the tao te ching
+ln https://tao.cblgh.org
+
+tt photos
+bb a system for sharing photos from various adventures 
+ln https://photos.cblgh.org
+
+tt people's cloud
+bb using the ideas of botnets for good  
+ln https://github.com/peoples-cloud/pc
+
+tt MOBY DICK; or, THE CYBERWHALE 
+bb a cyberpunk version of Moby Dick, [my entry for](https://github.com/dariusk/NaNoGenMo-2015/issues/109) NaNoGenMo 2015
+ln https://cblgh.org/nanogenmo15/cybersource.html
+
+tt mixtapes
+bb assorted mixtapes i've made
+ln https://www.mixcloud.com/cblgh/playlists/mixes/
+
+tt bots
+bb twitter bots i've made
+ln https://twitter.com/cblgh/lists/my-bots
+
+tt years
+bb my year in review
+// ln https://years.cblgh.org
+
+
+tt draw
+bb a collaborative art tool
+// ln http://draw.cblgh.org
+
+tt poetry
+bb collaborative internet fridge poetry
+// ln http://poetry.cblgh.org
+
+tt links
+bb a collection of my finest links
+// ln http://links.cblgh.org
+
+tt weeks
+bb a look at how i've spent the weeks of my life
+// ln http://weeks.cblgh.org
+
+tt jam
+bb a timer and theme generator with shareable urls
+// ln http://jam.cblgh.org
+
+tt random
+bb redirects to random pages
+// ln http://random.cblgh.org
+
+tt piratradio
+bb a collaborative playlist thing
+// ln https://piratrad.io
+
+tt scraper
+bb a web scraper for populating piratradio stations
+// ln http://scraper.cblgh.org

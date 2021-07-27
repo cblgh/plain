@@ -1,0 +1,12 @@
+tt projects
+bb new project releases
+ln /projects.xml
+
+tt articles
+bb the latest articles from cblgh.org
+ln /articles.xml
+
+tt all
+bb all of 
+ln /all.xml
+

@@ -1,0 +1,24 @@
+// tt = title, bb = brief, md = copy markdown file to webroot, mv = create redirect for argument, cp = copy directory // = comment (skip)
+
+tt four nights in tornio
+bb a tale of a meetup in a small town in the northern-most part of the world 
+cp ../four-nights-in-tornio
+
+tt support
+bb some notes on how my work is supported
+md wiki/life/support.md
+mv /support.html
+
+tt trustnet
+bb outlines my master's thesis research into subjective, trust-based moderation systems
+md wiki/exjobb/trustnet.md
+mv /articles/trustnet.html
+mv /trustnet.html
+
+tt sourdough process
+bb brief notes on my sourdough process
+md wiki/sourdough/philosophy.md
+
+tt the pomodoro work week
+bb the work-week revisioned
+md wiki/articles/12 pomodoro workday.md

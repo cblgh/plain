@@ -1,0 +1,44 @@
+// spec
+// 
+// tt title
+// bb oneline brief markdown description
+// ln link to resource representing the described item
+// md path to markdown file for longer descriptions or entire page content. copies md file to webroot
+// ww declares path in webroot
+// cf path containing ssg input (e.g. articles)
+// nn push to navigation element and set navigation item title
+// cc category should create rss feed
+// // comment, skip this 
+
+ww /
+tt # cblgh
+bb my home on this internetwork
+cf projects
+nn home
+cc new project releases
+
+ww /
+tt ## Contact
+bb find me on the web
+cf contacts
+
+ww /articles
+tt # Articles
+bb Articles I've written at one point or another. Typically, they start out as entries in my wiki, later becoming published when brought up frequently enough during conversations.
+cf articles
+nn articles
+cc the latest articles from cblgh.org
+
+ww /support
+md wiki/life/support.md
+nn about
+
+ww /feeds
+tt # feeds
+bb rss feeds originating from this site
+cf feeds
+nn rss
+
+ww /now
+md wiki/life/now.md
+nn now
