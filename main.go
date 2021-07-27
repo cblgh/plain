@@ -14,6 +14,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/cblgh/plain/rss"
+	"github.com/cblgh/plain/util"
+	"github.com/gomarkdown/markdown"
 	"io"
 	"io/fs"
 	"log"
@@ -23,9 +26,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"github.com/cblgh/plain/rss"
-	"github.com/cblgh/plain/util"
-	"github.com/gomarkdown/markdown"
 )
 
 // flags (imaginary, thus far)
@@ -743,8 +743,8 @@ func main() {
 	flag.Parse()
 
 	parseSymbols()
-  err := os.MkdirAll(OUTPATH, 0777)
-  util.Check(err)
+	err := os.MkdirAll(OUTPATH, 0777)
+	util.Check(err)
 	index := readListicle("index")
 	processRootListicle(index)
 	copyFile(cssPath, filepath.Join(OUTPATH, "style.css"))
@@ -752,7 +752,9 @@ func main() {
 
 /* rss-ish stuff */
 var rssmap map[string]rss.FeedItem
+
 const rfc822RSS = "Mon, 02 Jan 2006 15:04:05 -0700"
+
 func extractListicleFeedPosts(listicle, canonicalURL string) []rss.FeedItem {
 	pubdate := time.Now()
 	elements := readListicle(listicle)
