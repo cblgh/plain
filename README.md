@@ -1,6 +1,8 @@
 # plain
 _network markdown files into html with plaintext files_
 
+![plain in use over at https://cblgh.org](https://user-images.githubusercontent.com/3862362/127218176-379ff056-5e11-45a1-abcc-f43c7c47fb64.png)
+
 plain is a static-site generator operating on
 [plaintext files](https://en.wikipedia.org/wiki/Plain_text) containing a small set of commands
 and markdown input.
