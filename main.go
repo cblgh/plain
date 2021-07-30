@@ -572,6 +572,14 @@ func processRootListicle(elements []Element) {
 				page.headerContent = append(page.headerContent, markup(p.content))
 			case BRIEF:
 				page.headerContent = append(page.headerContent, markup(p.content))
+			case COPY_DIR:
+				echo("copying directory at", p.content)
+				if p.content == "/" || p.content == "~" {
+					echo(fmt.Sprintf("tried to copy '%s'; stopped the operation as it seems unlikely to be correct :)", p.content))
+					continue
+				}
+				err := CopyDirectory(p.content, OUTPATH, "")
+				util.Check(err)
 			case PATH_MD:
 				md, err := ReadMarkdownFile(p.content)
 				if err != nil {
@@ -587,6 +595,9 @@ func processRootListicle(elements []Element) {
 					os.Exit(0)
 				}
 				page.html = append(page.html, extractPageFragments(page.webpath, resource)...)
+			case REDIRECT:
+				err := DumpRedirectFile(p.content)
+				util.Check(err)
 			case SKIP:
 				fallthrough
 			default:
@@ -641,6 +652,10 @@ func insertSpacer() string {
 
 func persistToFS(pages map[string]Page) {
 	for route, page := range pages {
+		// we have this case if we e.g. only want to copy a folder
+		if len(page.html) == 0 {
+			continue
+		}
 		dirname := filepath.Join(OUTPATH, strings.TrimSpace(strings.TrimPrefix(route, "/")))
 		filename := filepath.Join(dirname, "index.html")
 		err := os.MkdirAll(dirname, 0777)
