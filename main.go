@@ -45,10 +45,10 @@ import (
 // DONE   output a feeds/index.html file, listing the generated feeds
 // DONE   make ww work for listcles and root listicle alike
 // DONE   define file with custom tags to longer-form names & enable people to define their own names for tags
-// implement support for:
+// implement support for..
 // in index:
-//  * generate redirect
-//  * copy directory
+//  DONE    generate redirect
+//  DONE    copy directory
 // in listicles:
 //  * generate navigation? might be hard
 //
@@ -512,12 +512,10 @@ func readListicle(filename string) []Element {
 			el = Element{}
 			continue
 		}
-		util.Check(err)
 		if symbol(line) == SKIP {
 			continue
 		}
-		parts := strings.Fields(line)
-		code := parts[0]
+		code := strings.Fields(line)[0]
 		content := strings.TrimSpace(line[len(code):])
 		el.pairs = append(el.pairs, Pair{code: code, content: content})
 	}
@@ -555,7 +553,7 @@ func processRootListicle(elements []Element) {
 		navElements = append(navElements, navEl)
 	}
 
-	// output a feeds listicle
+	// output listicle enumerating rss feeds
 	if len(feeds) > 0 {
 		feeds = append(feeds, feedDescription{name: "all", description: fmt.Sprintf("all of %s", util.TrimUrl(canonicalUrl))})
 		OutputFeedsListicle(feeds)
@@ -568,9 +566,8 @@ func processRootListicle(elements []Element) {
 			switch symbol(p.code) {
 			case PATH_WWWROOT:
 				page.webpath = p.content
-			case TITLE:
+			case TITLE, BRIEF:
 				page.headerContent = append(page.headerContent, markup(p.content))
-			case BRIEF:
 				page.headerContent = append(page.headerContent, markup(p.content))
 			case COPY_DIR:
 				echo("copying directory at", p.content)
@@ -580,10 +577,10 @@ func processRootListicle(elements []Element) {
 				}
 				err := CopyDirectory(p.content, OUTPATH, "")
 				util.Check(err)
-			case PATH_MD:
+			case PATH_MD: // change to work the same way as for regular listicles
 				md, err := ReadMarkdownFile(p.content)
 				if err != nil {
-					echo(fmt.Sprintf("%w", err))
+					echo(fmt.Errorf("%w", err))
 					continue
 				}
 				page.html = append(page.html, md.contents)
@@ -627,6 +624,7 @@ func processRootListicle(elements []Element) {
 		}
 	}
 
+	// write all html to files
 	persistToFS(pages)
 }
 
