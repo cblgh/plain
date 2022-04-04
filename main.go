@@ -28,33 +28,6 @@ import (
 	"time"
 )
 
-// flags (imaginary, thus far)
-// --media
-//    media root folder (used to copy over assets from e.g. a personal wiki)
-
-// TO DO:
-// DONE   don't hardcode alexander cobleigh in <title>; read header preamble from file?
-// DONE   don't hardcode webring icon in footer
-// after basics are finished:
-// DONE   --out flag
-// DONE   implement cp command to copy entire folder to new destination
-// DONE   --css flag
-// DONE   some solution for copying media files that aren't monotome-based (/media)
-// DONE   add rss support -> update feed whenever new items detected? use a canonical json file to write rss file?
-// DONE   save rss files in <OUTPATH/*.xml>
-// DONE   output a feeds/index.html file, listing the generated feeds
-// DONE   make ww work for listcles and root listicle alike
-// DONE   define file with custom tags to longer-form names & enable people to define their own names for tags
-// implement support for..
-// in index:
-//  DONE    generate redirect
-//  DONE    copy directory
-// in listicles:
-//  * generate navigation? might be hard
-//
-// stretchies:
-// properly indent html output?
-
 var verbose = true
 
 func echo(s ...interface{}) {
@@ -207,6 +180,20 @@ func extractImagePaths(content []byte) []string {
 	return paths
 }
 
+var wikilinksPattern = regexp.MustCompile(`(\[\[(.*?)\]\])`)
+
+func transformWikilinks(content []byte) []byte {
+	s := string(content)
+	matches := wikilinksPattern.FindAllStringSubmatch(s, -1)
+	// search and replace all instances of [[wiki]] syntax with a flat link to the subject e.g. /wiki
+	if len(matches) > 0 {
+		for _, match := range matches {
+			s = strings.ReplaceAll(s, match[1], fmt.Sprintf(`<a href="/%s">%s</a>`, match[2], match[2]))
+		}
+	}
+	return []byte(s)
+}
+
 func markup(s string) string {
 	return string(markdown.ToHTML([]byte(strings.TrimSpace(s)), nil, nil))
 }
@@ -242,7 +229,7 @@ func htmlPreamble(prevRoute string) string {
 		if returnName == "" {
 			returnName = "home"
 		}
-		returnLink = fmt.Sprintf(`<p><a href="%s">Back to %s</a></p>`, prevRoute, returnName)
+		returnLink = fmt.Sprintf(`<span><a href="%s">Back to %s</a></span>`, prevRoute, returnName)
 	}
 	var mainNav string
 	for _, nav := range navElements {
@@ -491,6 +478,7 @@ func ReadMarkdownFile(filename string) (mdFile, error) {
 		return mdFile{}, err
 	}
 	paths := extractImagePaths(b)
+	b = transformWikilinks(b)
 	return mdFile{contents: string(markdown.ToHTML(b, nil, nil)), images: paths}, nil
 }
 
@@ -567,7 +555,6 @@ func processRootListicle(elements []Element) {
 			case PATH_WWWROOT:
 				page.webpath = p.content
 			case TITLE, BRIEF:
-				page.headerContent = append(page.headerContent, markup(p.content))
 				page.headerContent = append(page.headerContent, markup(p.content))
 			case COPY_DIR:
 				echo("copying directory at", p.content)
