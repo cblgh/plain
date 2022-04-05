@@ -79,13 +79,13 @@ type Element struct {
 type PageFragment struct {
 	title, brief, link string
 	webpath, contents  string
+	location           string
 }
 
 type Page struct {
 	html          []string
 	webpath       string
 	headerContent []string
-	// todo: tab title
 }
 
 type mdFile struct {
@@ -222,7 +222,10 @@ func readTemplate(template, defaultContent string) (string, error) {
 	return string(b), nil
 }
 
-func htmlPreamble(prevRoute string) string {
+var titlePattern = regexp.MustCompile(`(<title>(.*)<\/title>)`)
+
+func htmlPreamble(pf PageFragment) string {
+	prevRoute := pf.webpath
 	var returnLink string
 	if prevRoute != "" {
 		returnName := strings.TrimPrefix(prevRoute, "/")
@@ -241,6 +244,21 @@ func htmlPreamble(prevRoute string) string {
 	header, err := readTemplate("header.html", DEFAULT_HEADER)
 	if err != nil {
 		log.Fatalln(err)
+	}
+	// augment html meta tags and titles with article metadata.
+	// grab unaugmented <title>
+	match := titlePattern.FindStringSubmatch(header)
+	if len(match) >= 3 {
+		var htmlMeta string
+		if pf.title != "" {
+			htmlMeta += fmt.Sprintf(`<title>%s — %s</title>%s`, pf.title, match[2], "\n")
+		}
+		if pf.brief != "" {
+			htmlMeta += fmt.Sprintf(`<meta name="description" content="%s">%s`, pf.brief, "\n")
+		}
+		if htmlMeta != "" {
+			header = strings.Replace(header, match[1], htmlMeta, -1)
+		}
 	}
 	return fmt.Sprintf(`%s
   <ul class="main-navigation">
@@ -263,17 +281,12 @@ func extractPageFragments(webpath string, elements []Element) []string {
 	// TODO: do 2 pass to identify alternate write paths for PATH_MD / COPY_DIR, as set by LINK tag?
 	var html []string
 	for _, el := range elements {
-		pf := PageFragment{}
+		pf := PageFragment{webpath: webpath}
 		var rewrittenDest string
 		for _, p := range el.pairs {
 			switch symbol(p.code) {
 			case PATH_WWWROOT:
 				rewrittenDest = p.content
-			}
-		}
-
-		for _, p := range el.pairs {
-			switch symbol(p.code) {
 			case TITLE:
 				pf.title = p.content
 			case BRIEF:
@@ -284,8 +297,13 @@ func extractPageFragments(webpath string, elements []Element) []string {
 					continue
 				}
 				pf.link = p.content
-				// copy a directory from one place and into plain's webroot
+			}
+		}
+
+		for _, p := range el.pairs {
+			switch symbol(p.code) {
 			case COPY_DIR:
+				// copy a directory from one place and into plain's webroot
 				echo("copying directory at", p.content)
 				if p.content == "/" || p.content == "~" {
 					echo(fmt.Sprintf("tried to copy '%s'; stopped the operation as it seems unlikely to be correct :)", p.content))
@@ -298,9 +316,10 @@ func extractPageFragments(webpath string, elements []Element) []string {
 					base = rewrittenDest
 				}
 				pf.link = filepath.Join("/", base)
-				// source a markdown file from one place and output a corresponding html site in plain's webroot
 			case PATH_MD:
-				err := CopyMarkdownFile(p.content, rewrittenDest, webpath)
+				// source a markdown file from one place and output a corresponding html site in plain's webroot
+				pf.location = p.content
+				err := CopyMarkdownFile(pf, rewrittenDest)
 				if err != nil {
 					continue
 				}
@@ -379,13 +398,13 @@ func (md *mdFile) rewriteImageUrls(mediadir string) {
 }
 
 // copies markdown file at location, returns strings.TrimSuffix(filepath.Base(location), ".md")
-func CopyMarkdownFile(location, rewrittenDest, webpath string) error {
-	filename, _ := extractFilenames(location)
+func CopyMarkdownFile(pf PageFragment, rewrittenDest string) error {
+	filename, _ := extractFilenames(pf.location)
 	md, err := ReadMarkdownFile(filename)
 	if err != nil {
 		return err
 	}
-	err = WriteMarkdownAsHTML(location, rewrittenDest, webpath, md)
+	err = WriteMarkdownAsHTML(pf, rewrittenDest, md)
 	return err
 }
 
@@ -436,8 +455,8 @@ func DumpRedirectFile(webpath string) error {
 // the "markdown" we're writing has actually already been parsed as html, so what we're writing is really just html. but
 // i think this name is more representative of what we're doing: persisting what was a markdown file in one location, as
 // a new html file in another location
-func WriteMarkdownAsHTML(location, rewrittenDest, webpath string, md mdFile) error {
-	filename, articleName := extractFilenames(location)
+func WriteMarkdownAsHTML(pf PageFragment, rewrittenDest string, md mdFile) error {
+	filename, articleName := extractFilenames(pf.location)
 	if rewrittenDest != "" {
 		articleName = rewrittenDest
 	}
@@ -459,7 +478,7 @@ func WriteMarkdownAsHTML(location, rewrittenDest, webpath string, md mdFile) err
 		}
 		// copy all images from their source to mediadir
 		for _, img := range md.images {
-			base := strings.Split(filepath.ToSlash(location), "/")[0]
+			base := strings.Split(filepath.ToSlash(pf.location), "/")[0]
 			src := filepath.Join(base, img)
 			dst := filepath.Join(mediadir, filepath.Base(img))
 			echo(fmt.Sprintf("copying %s to %s\n", src, dst))
@@ -468,7 +487,7 @@ func WriteMarkdownAsHTML(location, rewrittenDest, webpath string, md mdFile) err
 		md.rewriteImageUrls(mediabase)
 	}
 	echo("writing file contents to", outfile)
-	err = os.WriteFile(outfile, []byte(wrap(webpath, md.contents)), 0666)
+	err = os.WriteFile(outfile, []byte(wrap(pf, md.contents)), 0666)
 	return err
 }
 
@@ -482,8 +501,8 @@ func ReadMarkdownFile(filename string) (mdFile, error) {
 	return mdFile{contents: string(markdown.ToHTML(b, nil, nil)), images: paths}, nil
 }
 
-func wrap(webpath, html string) string {
-	return fmt.Sprintf(`%s %s %s`, htmlPreamble(webpath), html, htmlEpilogue())
+func wrap(pf PageFragment, html string) string {
+	return fmt.Sprintf(`%s %s %s`, htmlPreamble(pf), html, htmlEpilogue())
 }
 
 func readListicle(filename string) []Element {
@@ -646,7 +665,7 @@ func persistToFS(pages map[string]Page) {
 		err := os.MkdirAll(dirname, 0777)
 		util.Check(err)
 		webpath := createHistoryLink(route)
-		html := fmt.Sprintf("%s\n%s\n%s", htmlPreamble(webpath), strings.Join(page.html, ""), htmlEpilogue())
+		html := fmt.Sprintf("%s\n%s\n%s", htmlPreamble(PageFragment{webpath: webpath}), strings.Join(page.html, ""), htmlEpilogue())
 		err = os.WriteFile(filename, []byte(html), 0666)
 		util.Check(err)
 	}
