@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"github.com/cblgh/plain/rss"
 	"github.com/cblgh/plain/util"
+	"github.com/cblgh/plain/og"
 	"github.com/gomarkdown/markdown"
 	"io"
 	"io/fs"
@@ -188,7 +189,7 @@ func transformWikilinks(content []byte) []byte {
 	// search and replace all instances of [[wiki]] syntax with a flat link to the subject e.g. /wiki
 	if len(matches) > 0 {
 		for _, match := range matches {
-			s = strings.ReplaceAll(s, match[1], fmt.Sprintf(`<a href="/%s">%s</a>`, match[2], match[2]))
+			s = strings.ReplaceAll(s, match[1], fmt.Sprintf(`<a href="/%s">%s</a>`, strings.ToLower(match[2]), match[2]))
 		}
 	}
 	return []byte(s)
@@ -199,6 +200,8 @@ func markup(s string) string {
 }
 
 func (pf PageFragment) assemble() string {
+  // if listicle entry omits title, don't list it as a listicle item (it's a hidden page)
+  if len(pf.title) == 0 { return "" }
 	if len(pf.link) > 0 {
 		return fmt.Sprintf(`<h2 class="listicle"><a href="%s">%s</a></h2>
 %s
@@ -256,6 +259,23 @@ func htmlPreamble(pf PageFragment) string {
 		if pf.brief != "" {
 			htmlMeta += fmt.Sprintf(`<meta name="description" content="%s">%s`, pf.brief, "\n")
 		}
+
+    // generate opengraph metadata and image
+    if pf.title != "" {
+      _, articleName := extractFilenames(pf.location)
+      // if rewrittenDest != "" {
+      //   articleName = rewrittenDest
+      // }
+      imageName := fmt.Sprintf("%s.png", strings.ReplaceAll(strings.ToLower(articleName), " ", "-"))
+      imagePath := filepath.Join(OUTPATH, "og", imageName)
+      canonicalPath := fmt.Sprintf("%s/og/%s", canonicalUrl, imageName)
+      err = os.MkdirAll(filepath.Dir(imagePath), 0777)
+      util.Check(err)
+
+      settings := og.GetDefaultSettings()
+      htmlMeta += og.GenerateMetadata(pf.title, pf.brief, canonicalPath, settings)
+      og.GenerateImage(pf.title, pf.brief, imagePath, settings)
+    }
 		if htmlMeta != "" {
 			header = strings.Replace(header, match[1], htmlMeta, -1)
 		}
