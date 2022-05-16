@@ -14,9 +14,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/cblgh/plain/og"
 	"github.com/cblgh/plain/rss"
 	"github.com/cblgh/plain/util"
-	"github.com/cblgh/plain/og"
 	"github.com/gomarkdown/markdown"
 	"io"
 	"io/fs"
@@ -61,6 +61,7 @@ const (
 	/* cp */ COPY_DIR
 	/* mv */ REDIRECT
 	/* cc */ CREATE_RSS
+	/* bg */ BACKGROUND
 	/* xx */ NOIDEA
 )
 
@@ -79,6 +80,7 @@ type Element struct {
 
 type PageFragment struct {
 	title, brief, link string
+	background         string
 	webpath, contents  string
 	location           string
 }
@@ -127,6 +129,8 @@ func parseSymbols() {
 			return REDIRECT
 		case "CREATE_RSS":
 			return CREATE_RSS
+		case "BACKGROUND":
+			return BACKGROUND
 		default:
 			return NOIDEA
 		}
@@ -200,8 +204,10 @@ func markup(s string) string {
 }
 
 func (pf PageFragment) assemble() string {
-  // if listicle entry omits title, don't list it as a listicle item (it's a hidden page)
-  if len(pf.title) == 0 { return "" }
+	// if listicle entry omits title, don't list it as a listicle item (it's a hidden page)
+	if len(pf.title) == 0 {
+		return ""
+	}
 	if len(pf.link) > 0 {
 		return fmt.Sprintf(`<h2 class="listicle"><a href="%s">%s</a></h2>
 %s
@@ -248,6 +254,22 @@ func htmlPreamble(pf PageFragment) string {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	// add background image to an article if it has been set
+	const backgroundSentinel = "<!-- background -->"
+	const backgroundTemplate = `
+  <style>
+  html {
+    background-image: url("%s");
+  }
+  </style>
+  `
+	if pf.background != "" {
+		bg := fmt.Sprintf(backgroundTemplate, pf.background)
+		header = strings.ReplaceAll(header, backgroundSentinel, bg)
+	} else {
+		header = strings.ReplaceAll(header, backgroundSentinel, "")
+	}
 	// augment html meta tags and titles with article metadata.
 	// grab unaugmented <title>
 	match := titlePattern.FindStringSubmatch(header)
@@ -260,22 +282,22 @@ func htmlPreamble(pf PageFragment) string {
 			htmlMeta += fmt.Sprintf(`<meta name="description" content="%s">%s`, pf.brief, "\n")
 		}
 
-    // generate opengraph metadata and image
-    if pf.title != "" {
-      _, articleName := extractFilenames(pf.location)
-      // if rewrittenDest != "" {
-      //   articleName = rewrittenDest
-      // }
-      imageName := fmt.Sprintf("%s.png", strings.ReplaceAll(strings.ToLower(articleName), " ", "-"))
-      imagePath := filepath.Join(OUTPATH, "og", imageName)
-      canonicalPath := fmt.Sprintf("%s/og/%s", canonicalUrl, imageName)
-      err = os.MkdirAll(filepath.Dir(imagePath), 0777)
-      util.Check(err)
+		// generate opengraph metadata and image
+		if pf.title != "" {
+			_, articleName := extractFilenames(pf.location)
+			// if rewrittenDest != "" {
+			//   articleName = rewrittenDest
+			// }
+			imageName := fmt.Sprintf("%s.png", strings.ReplaceAll(strings.ToLower(articleName), " ", "-"))
+			imagePath := filepath.Join(OUTPATH, "og", imageName)
+			canonicalPath := fmt.Sprintf("%s/og/%s", canonicalUrl, imageName)
+			err = os.MkdirAll(filepath.Dir(imagePath), 0777)
+			util.Check(err)
 
-      settings := og.GetDefaultSettings()
-      htmlMeta += og.GenerateMetadata(pf.title, pf.brief, canonicalPath, settings)
-      og.GenerateImage(pf.title, pf.brief, imagePath, settings)
-    }
+			settings := og.GetDefaultSettings()
+			htmlMeta += og.GenerateMetadata(pf.title, pf.brief, canonicalPath, settings)
+			og.GenerateImage(pf.title, pf.brief, imagePath, settings)
+		}
 		if htmlMeta != "" {
 			header = strings.Replace(header, match[1], htmlMeta, -1)
 		}
@@ -303,6 +325,7 @@ func extractPageFragments(webpath string, elements []Element) []string {
 	for _, el := range elements {
 		pf := PageFragment{webpath: webpath}
 		var rewrittenDest string
+		// var background string
 		for _, p := range el.pairs {
 			switch symbol(p.code) {
 			case PATH_WWWROOT:
@@ -311,6 +334,8 @@ func extractPageFragments(webpath string, elements []Element) []string {
 				pf.title = p.content
 			case BRIEF:
 				pf.brief = p.content
+			case BACKGROUND:
+				pf.background = p.content
 			case LINK:
 				if pf.link != "" {
 					echo(fmt.Sprintf("err: already set link on page fragment? %v\n", el.pairs))
