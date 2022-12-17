@@ -97,7 +97,7 @@ func GenerateMetadata(title, subtitle, imagepath string, settings Settings) stri
 func breakText(source string, MAX_LENGTH int) []string {
 	var text []string
 	prevIndex := 0
-	lastIndex := MAX_LENGTH
+	lastIndex := len(source)
 	if len(source) < MAX_LENGTH {
 		return []string{source}
 	}

@@ -29,6 +29,10 @@ import (
 	"time"
 )
 
+// TODO (2022-11-04):
+// * add ability to set attribute on e.g. <a> elements such that i can do:
+//    ln cblgh.org
+//    attr rel="me" => <a href="cblgh.org" rel="me">
 var verbose = true
 
 func echo(s ...interface{}) {
