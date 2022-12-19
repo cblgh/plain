@@ -287,7 +287,7 @@ func htmlPreamble(pf PageFragment) string {
 		}
 
 		// generate opengraph metadata and image
-		if pf.title != "" {
+		if generateOG && pf.title != "" {
 			_, articleName := extractFilenames(pf.location)
 			// if rewrittenDest != "" {
 			//   articleName = rewrittenDest
@@ -798,12 +798,14 @@ func populateFiles() {
 }
 
 var canonicalUrl string
+var generateOG bool
 var symbols map[string]int
 
 func main() {
 	populateFiles()
 
 	var cssPath string
+	flag.BoolVar(&generateOG, "generate-previews", false, "generate experimental open-graph image previews")
 	flag.StringVar(&OUTPATH, "out", "./web", "output path containing the assembled html")
 	flag.StringVar(&cssPath, "css", "./style.css", "css stylesheet to copy into webdir")
 	flag.StringVar(&canonicalUrl, "url", "", "the canonical url of the hosted site; used primarily to generate rss feeds")
