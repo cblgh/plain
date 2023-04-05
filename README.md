@@ -3,9 +3,18 @@ _network markdown files into html with plaintext files_
 
 ![plain in use over at https://cblgh.org](https://user-images.githubusercontent.com/3862362/127218176-379ff056-5e11-45a1-abcc-f43c7c47fb64.png)
 
-plain is a static-site generator operating on
-[plaintext files](https://en.wikipedia.org/wiki/Plain_text) containing a small set of commands
-and markdown input.
+plain is a static-site generator operating on [plaintext
+files](https://en.wikipedia.org/wiki/Plain_text) containing a small set of commands and
+markdown input.
+
+## Why
+Original impetus:
+
+* Server crashed leading to a lost web folder which contained manual-ish copied html files / pandoc'd wiki articles; many gone, post-crash
+* Wanted something to republish markdown articles from my wiki to static html files, and update an article index
+* Grew tired of my old website, mostly due to the markup—but honestly also the design
+
+## What
 
 plain revolves around converting individual markdown files into a network of html pages,
 focusing on frictionless use.
@@ -15,13 +24,28 @@ webroot while also connecting the copied directory to your other pages. You can 
 conceptual articles in markdown, while being free to mix in the occasional bespoke page, when
 the mood/humor/fever strikes.
 
-## Usage
-```
-plain
+Additional capabilities of plain include generating rss feeds for discrete
+website categories, highlighting articles in the header nav, creating link-only
+article dumps, automatically generate opengraph images for no-effort social
+media link previews.
 
+See the [code](https://github.com/cblgh/plain), or grab a [build](https://github.com/cblgh/plain/releases/).
+
+## Usage
+Typical use: 
+
+```
+plain --generate-previews --url https://cblgh.org; cp -r web/* /path/to/my/webroot   
+```
+
+Use the help flag to see all options:
+
+```
 plain -h
   -css string
         css stylesheet to copy into webdir (default "./style.css")
+  -generate-previews
+        generate experimental open-graph image previews
   -out string
         output path containing the assembled html (default "./web")
   -url string
@@ -69,6 +93,7 @@ restriction is that the new command name may contain no spaces.
 
 
 Currently some commands are only suitable for the index file, and some only for listicles.
+
 ```
 listicle only
     none! :)
@@ -85,12 +110,4 @@ both listicle & index
     //  SKIP             comment, skip parsing this line
     cp  COPY_DIR         copy an entire directory to the web root, preserving the folder name 
     mv  REDIRECT         redirect the given url (by dumping a redirect page) to the current item
-```
-
-## Why
-```
-// original impetus
-// * server crashed -> lost web dir folder with manual-ish copied over html files / pandoc'd wiki articles
-// * wanted something to republish markdown articles from my wiki to static html files, and update an index over them
-// * was tired of my old website, mostly due to the markup. but honestly also the design
 ```
