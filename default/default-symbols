@@ -9,3 +9,8 @@ nn  NAVIGATION_TITLE name navigation item & add to the main nav
 mv  REDIRECT         redirect the given url (by dumping a redirect page) to the current item
 cc  CREATE_RSS       create rss feed for listicle
 //  SKIP             comment, skip parsing this line
+bg  BACKGROUND       background image for articles
+sf  FOREGROUND_COLOR foreground color (set foreground)
+sb  BACKGROUND_COLOR background color (set background)
+sl  LINK_COLOR       link color (set link)
+as  ALIAS            redirects from route /<something> to route /<entirely-something-else> (as defined by PATH_MD)
