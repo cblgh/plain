@@ -63,7 +63,8 @@ const (
 	/* md */ PATH_MD
 	/* ww */ PATH_WWWROOT
 	/* cp */ COPY_DIR
-	/* mv */ REDIRECT
+	/* mv */ REDIRECT /* redirects a something.html to a /something/index.html route
+	/* as */ ALIAS /* redirects from a route /something to a route /entirely-something-else (defined by md)*/
 	/* cc */ CREATE_RSS
 	/* bg */ BACKGROUND
   /* sf */ FOREGROUND_COLOR
@@ -141,6 +142,8 @@ func parseSymbols() {
 			return COPY_DIR
 		case "REDIRECT":
 			return REDIRECT
+		case "ALIAS":
+			return ALIAS
 		case "CREATE_RSS":
 			return CREATE_RSS
 		case "BACKGROUND":
@@ -443,6 +446,9 @@ func extractPageFragments(webpath string, elements []Element) []string {
 			case REDIRECT:
 				err := DumpRedirectFile(p.content)
 				util.Check(err)
+			case ALIAS:
+				err := DumpAliasFile(p.content, pf.link)
+				util.Check(err)
 			}
 		}
 		html = append(html, pf.assemble())
@@ -524,6 +530,9 @@ func CopyMarkdownFile(pf PageFragment, rewrittenDest string) error {
 //go:embed default/redirect-template.html
 var REDIRECT_TEMPLATE string
 
+//go:embed default/alias-template.html
+var ALIAS_TEMPLATE string
+
 // The mv command to redirects from older routes to the declared one
 // examples:
 // md wiki/exjobb/trustnet.md
@@ -564,6 +573,32 @@ func DumpRedirectFile(webpath string) error {
 	}
 	return nil
 }
+
+func DumpAliasFile(aliasPath, webpath string) error {
+	var outfile string
+	var dst string
+
+	dst = webpath
+	// we'll create outfile as it's the alias that will be visited intially (which will redirect to `dst`)
+	outfile = filepath.Join(OUTPATH, aliasPath, "index.html")
+	// make sure we have the appropriate folder structure
+	err := os.MkdirAll(filepath.Join(OUTPATH, aliasPath), 0777)
+	if err != nil {
+		return err
+	}
+	// but first: make sure we're not clobbering something that's already there
+	_, err = os.Stat(outfile)
+	// ok: we're not clobbering anything, time to dump stuff
+	if errors.Is(err, os.ErrNotExist) {
+		aliasInstance := strings.ReplaceAll(ALIAS_TEMPLATE, "$SENTINEL$", dst)
+		err = os.WriteFile(outfile, []byte(aliasInstance), 0666)
+		return err
+	} else if err != nil {
+		return err
+	}
+	return nil
+}
+
 
 // the "markdown" we're writing has actually already been parsed as html, so what we're writing is really just html. but
 // i think this name is more representative of what we're doing: persisting what was a markdown file in one location, as
