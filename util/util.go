@@ -27,15 +27,19 @@ func Check(err error) {
 
 // Convert markdown links to just the descriptive part (for nicer rss feed item text)
 func SanitizeMarkdown(markdownIn string) string {
+	removeTitlePattern := regexp.MustCompile(`^#+\s*(.*?)`)
 	removeLinkPattern := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`)
-	matches := removeLinkPattern.FindAllSubmatch([]byte(markdownIn), -1)
-	sanitized := markdownIn
-	for _, m := range matches {
-		if len(m) >= 2 {
-			original, replacement := string(m[0]), string(m[1])
-			sanitized = strings.ReplaceAll(sanitized, original, replacement)
-		}
-	}
+  patterns := []*regexp.Regexp{removeTitlePattern, removeLinkPattern}
+  sanitized := markdownIn
+  for _, pattern := range patterns {
+    matches := pattern.FindAllSubmatch([]byte(sanitized), -1)
+    for _, m := range matches {
+      if len(m) >= 2 {
+        original, replacement := string(m[0]), string(m[1])
+        sanitized = strings.ReplaceAll(sanitized, original, replacement)
+      }
+    }
+  }
 	return sanitized
 }
 

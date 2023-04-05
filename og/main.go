@@ -86,12 +86,16 @@ func GenerateImage(title, subtitle, outpath string, settings Settings) {
 
 func GenerateMetadata(title, subtitle, imagepath string, settings Settings) string {
 	return fmt.Sprintf(`
-	<meta property="og:image" content="%s"/>
 	<meta property="og:title" content="%s"/>
   <meta property="og:type" content="website" />
 	<meta property="og:description" content="%s"/>
-	<meta property="og:image:width" content="%d"/>
-	<meta property="og:image:height" content="%d"/>`, imagepath, strings.Title(title), subtitle, settings.width, settings.height)
+	`, strings.Title(title), subtitle)
+  /* 
+  <meta property="og:image" content="%s"/>
+
+  <meta property="og:image:width" content="%d"/>
+	<meta property="og:image:height" content="%d"/>
+  */
 }
 
 func breakText(source string, MAX_LENGTH int) []string {
@@ -146,7 +150,7 @@ func generate(settings Settings, text []string, outpath string) {
 
 	var err error
 	// Draw the text.
-	pt := freetype.Pt(int(settings.size*settings.titleMultiplier), int(settings.size/2)+int(c.PointToFixed(settings.size*settings.titleMultiplier)>>6))
+	pt := freetype.Pt(int(settings.size), int(settings.size/2)+int(c.PointToFixed(settings.size*settings.titleMultiplier)>>6))
 	titleMode := true
 	// figure out when we switch from titles to subtitles.
 	// this is important to make the spacing look right in the transition
