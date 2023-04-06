@@ -789,7 +789,7 @@ func processRootListicle(elements []Element) {
 	persistToFS(pages)
 }
 
-const ListicleTemplate = `tt %s
+const ListicleTemplate = `tt %s.xml
 bb %s
 ln /%s.xml
 
