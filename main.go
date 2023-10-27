@@ -31,9 +31,9 @@ import (
 )
 
 // TODO (2022-11-04):
-// * add ability to set attribute on e.g. <a> elements such that i can do:
-//    ln cblgh.org
-//    attr rel="me" => <a href="cblgh.org" rel="me">
+//   - add ability to set attribute on e.g. <a> elements such that i can do:
+//     ln cblgh.org
+//     attr rel="me" => <a href="cblgh.org" rel="me">
 var verbose = true
 
 func echo(s ...interface{}) {
@@ -80,15 +80,15 @@ const (
 	/* ww */ PATH_WWWROOT
 	/* cp */ COPY_DIR
 	/* mv */ REDIRECT /* redirects a something.html to a /something/index.html route
-	/* as */ ALIAS /* redirects from a route /something to a route /entirely-something-else (defined by md)*/
+	/* as */ALIAS /* redirects from a route /something to a route /entirely-something-else (defined by md)*/
 	/* cc */ CREATE_RSS
 	/* bg */ BACKGROUND
-  /* sf */ FOREGROUND_COLOR
-  /* sb */ BACKGROUND_COLOR
-  /* sl */ LINK_COLOR
+	/* sf */ FOREGROUND_COLOR
+	/* sb */ BACKGROUND_COLOR
+	/* sl */ LINK_COLOR
 	/* gt */ GIT_REPO
 	/* br */ GIT_BRANCH
-  /* xx */ NOIDEA
+	/* xx */ NOIDEA
 )
 
 type feedDescription struct {
@@ -105,13 +105,13 @@ type Element struct {
 }
 
 type Theme struct {
-  foreground string
-  background string
-  link string
+	foreground string
+	background string
+	link       string
 }
 
 type PageFragment struct {
-  theme Theme
+	theme              Theme
 	title, brief, link string
 	background         string
 	webpath, contents  string
@@ -121,7 +121,7 @@ type PageFragment struct {
 type Page struct {
 	html          []string
 	headerContent []string
-  pf PageFragment
+	pf            PageFragment
 }
 
 type mdFile struct {
@@ -255,15 +255,15 @@ func (pf PageFragment) assemble() string {
 	}
 	if len(pf.link) > 0 {
 		return fmt.Sprintf(
-   `<dt><a href="%s">%s</a></dt>
+			`<dt><a href="%s">%s</a></dt>
     <dd>%s</dd>
    `,
-    pf.link, pf.title, markup(pf.brief))
+			pf.link, pf.title, markup(pf.brief))
 	} else {
 		return fmt.Sprintf(`
     <dt>%s</dt>
     <dd>%s</dd>`,
-    pf.title, markup(pf.brief))
+			pf.title, markup(pf.brief))
 	}
 }
 
@@ -281,8 +281,8 @@ func readTemplate(template, defaultContent string) (string, error) {
 
 var titlePattern = regexp.MustCompile(`(<title>(.*)<\/title>)`)
 
-func htmlContent (content string) string {
-  return fmt.Sprintf("<main><article>%s</article></main>", content)
+func htmlContent(content string) string {
+	return fmt.Sprintf("<main><article>%s</article></main>", content)
 }
 
 func htmlPreamble(pf PageFragment) string {
@@ -294,10 +294,10 @@ func htmlPreamble(pf PageFragment) string {
 		if returnName == "" {
 			returnName = "home"
 		}
-    mainNav += fmt.Sprintf(`<li><a href="%s">Back to %s</a></li>`, prevRoute, returnName)
-  } else {
-    mainNav = "<li></li> "
-  }
+		mainNav += fmt.Sprintf(`<li><a href="%s">Back to %s</a></li>`, prevRoute, returnName)
+	} else {
+		mainNav = "<li></li> "
+	}
 	for _, nav := range navElements {
 		if nav.text == "" {
 			continue
@@ -325,31 +325,31 @@ func htmlPreamble(pf PageFragment) string {
 	} else {
 		header = strings.ReplaceAll(header, backgroundSentinel, "")
 	}
-  if pf.theme.foreground != "" || pf.theme.background != "" || pf.theme.link != "" {
-    var theme string
-    if pf.theme.foreground != "" {
-      theme += fmt.Sprintf("--foreground: %s !important;", pf.theme.foreground)
-    }
-    if pf.theme.background != "" {
-      theme += fmt.Sprintf("--background: %s !important;", pf.theme.background)
-    }
-    if pf.theme.link != "" {
-      theme += fmt.Sprintf("--highlight: %s !important;", pf.theme.link)
-    }
+	if pf.theme.foreground != "" || pf.theme.background != "" || pf.theme.link != "" {
+		var theme string
+		if pf.theme.foreground != "" {
+			theme += fmt.Sprintf("--foreground: %s !important;", pf.theme.foreground)
+		}
+		if pf.theme.background != "" {
+			theme += fmt.Sprintf("--background: %s !important;", pf.theme.background)
+		}
+		if pf.theme.link != "" {
+			theme += fmt.Sprintf("--highlight: %s !important;", pf.theme.link)
+		}
 
-    rootStyle := fmt.Sprintf(`
+		rootStyle := fmt.Sprintf(`
     :root {
       %s
     }
     `, theme)
 
-    if pf.theme.link != "" {
-      rootStyle += fmt.Sprintf(`
+		if pf.theme.link != "" {
+			rootStyle += fmt.Sprintf(`
       a {
         color: %s !important;
       }`, pf.theme.link)
-    }
-    style := fmt.Sprintf(`<style>%s</style`, rootStyle)
+		}
+		style := fmt.Sprintf(`<style>%s</style`, rootStyle)
 		header = strings.ReplaceAll(header, themeSentinel, style)
 	} else {
 		header = strings.ReplaceAll(header, backgroundSentinel, "")
@@ -407,7 +407,7 @@ var OUTPATH = filepath.Join(".", "web")
 func extractPageFragments(webpath string, elements []Element) []string {
 	// TODO: do 2 pass to identify alternate write paths for PATH_MD / COPY_DIR, as set by LINK tag?
 	var html []string
-  html = append(html, "<dl class='listicle'>")
+	html = append(html, "<dl class='listicle'>")
 	for _, el := range elements {
 		pf := PageFragment{webpath: webpath}
 		var rewrittenDest string
@@ -420,7 +420,7 @@ func extractPageFragments(webpath string, elements []Element) []string {
 			case PATH_WWWROOT:
 				rewrittenDest = p.content
 			case TITLE:
-        pf.title = p.content
+				pf.title = p.content
 			case BRIEF:
 				pf.brief = p.content
 			case BACKGROUND:
@@ -446,13 +446,13 @@ func extractPageFragments(webpath string, elements []Element) []string {
 				setupBareRepo(p.content, filepath.Join(OUTPATH, "_git"), branchName)
 				repoName := filepath.Base(p.content)
 
-        if pf.title == "" {
+				if pf.title == "" {
 					pf.title = repoName
 				}
 
 				// check for readme variants to render
 				readmeVariations := []string{"README.md", "readme.md", "README"}
-				checkReadmeExists := func (p string) bool {
+				checkReadmeExists := func(p string) bool {
 					_, err := os.Stat(p)
 					if err != nil && errors.Is(err, os.ErrNotExist) {
 						return false
@@ -528,7 +528,7 @@ func extractPageFragments(webpath string, elements []Element) []string {
 		}
 		html = append(html, pf.assemble())
 	}
-  html = append(html, "</dl>")
+	html = append(html, "</dl>")
 	return html
 }
 
@@ -674,7 +674,6 @@ func DumpAliasFile(aliasPath, webpath string) error {
 	return nil
 }
 
-
 // the "markdown" we're writing has actually already been parsed as html, so what we're writing is really just html. but
 // i think this name is more representative of what we're doing: persisting what was a markdown file in one location, as
 // a new html file in another location
@@ -786,10 +785,10 @@ func setupBareRepo(repoSrcPath, dst, defaultBranch string) {
 	commitHook := fmt.Sprintf(`#!/bin/bash
 	git push local %s
 	`, defaultBranch)
-	err =	os.WriteFile(filepath.Join(repoSrcPath, ".git", "hooks", "post-commit"), []byte(commitHook), 0777)
+	err = os.WriteFile(filepath.Join(repoSrcPath, ".git", "hooks", "post-commit"), []byte(commitHook), 0777)
 	if err != nil {
 		fmt.Println("failed to add post-commit to source repository")
-	log.Fatalln(err)
+		log.Fatalln(err)
 	} else {
 		echo("post-commit hook written")
 	}
@@ -866,14 +865,14 @@ func processRootListicle(elements []Element) {
 		for _, p := range el.pairs {
 			switch symbol(p.code) {
 			case PATH_WWWROOT:
-        // TODO (2023-02-02): remove page.webpath bc now duplicate of pf
-        page.pf.webpath = p.content
-      case TITLE:
+				// TODO (2023-02-02): remove page.webpath bc now duplicate of pf
+				page.pf.webpath = p.content
+			case TITLE:
 				page.headerContent = append(page.headerContent, markup(p.content))
-        page.pf.title = util.SanitizeMarkdown(p.content)
-      case BRIEF:
+				page.pf.title = util.SanitizeMarkdown(p.content)
+			case BRIEF:
 				page.headerContent = append(page.headerContent, markup(p.content))
-        page.pf.brief = util.SanitizeMarkdown(p.content)
+				page.pf.brief = util.SanitizeMarkdown(p.content)
 			case COPY_DIR:
 				echo("copying directory at", p.content)
 				if p.content == "/" || p.content == "~" {
@@ -913,8 +912,8 @@ func processRootListicle(elements []Element) {
 			pagePrev.html = append(pagePrev.html, insertSpacer())
 			pagePrev.html = append(pagePrev.html, page.headerContent...)
 			page.html = append(pagePrev.html, page.html...)
-      // don't overwrite the previous title
-      page.pf.title = pagePrev.pf.title
+			// don't overwrite the previous title
+			page.pf.title = pagePrev.pf.title
 		} else {
 			page.html = append(page.produceHeader(), page.html...)
 		}
@@ -956,7 +955,7 @@ func insertSpacer() string {
 }
 
 func persistToFS(pages map[string]Page) {
-  // route and page.pf.webpath are equivalent, route's just shorter
+	// route and page.pf.webpath are equivalent, route's just shorter
 	for route, page := range pages {
 		// we have this case if we e.g. only want to copy a folder
 		if len(page.html) == 0 {
@@ -966,7 +965,7 @@ func persistToFS(pages map[string]Page) {
 		filename := filepath.Join(dirname, "index.html")
 		err := os.MkdirAll(dirname, 0777)
 		util.Check(err)
-    page.pf.webpath = createHistoryLink(route)
+		page.pf.webpath = createHistoryLink(route)
 		html := wrap(page.pf, strings.Join(page.html, ""))
 		err = os.WriteFile(filename, []byte(html), 0666)
 		util.Check(err)
