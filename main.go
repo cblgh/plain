@@ -22,6 +22,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -41,6 +42,19 @@ func echo(s ...interface{}) {
 	}
 }
 
+// git repo ideas:
+// * set all git repos under <webroot>/_git/<reponame>.git
+// * <reponame> is taken as the last path component of the passed in repository
+// * faffing about needed:
+//		* create bare repo: git clone --bare <path-reponame> <webroot>/_git/<reponame>.git
+//		* in bare repo: hooks/post-update.sample move to hooks/post-update.sample
+//		* in bare repo: execute git update-server-info
+//    * in src repo: execute git add remote local <webroot/_git/reponame.git>
+//		* in src repo: .git/hooks/post-commit should exist, be executable, and run `git push local main`
+//
+// detect "readme.md"; detect if first line is a title, inject "Get the code: git clone git.<canonicalurl>/<reponame.git>
+// play around with rendering latest commit info
+
 // tt title
 // bb oneline brief markdown description
 // md path to markdown file for longer descriptions, or entire page content
@@ -52,6 +66,8 @@ func echo(s ...interface{}) {
 // mv redirect the given url (by dumping a redirect page) to the current item
 // cc create rss feed for listicle
 // // comment, skip this
+// gt git repo
+// br git branch
 
 const (
 	/* tt */ TITLE = iota
@@ -70,6 +86,8 @@ const (
   /* sf */ FOREGROUND_COLOR
   /* sb */ BACKGROUND_COLOR
   /* sl */ LINK_COLOR
+	/* gt */ GIT_REPO
+	/* br */ GIT_BRANCH
   /* xx */ NOIDEA
 )
 
@@ -154,6 +172,10 @@ func parseSymbols() {
 			return BACKGROUND_COLOR
 		case "LINK_COLOR":
 			return LINK_COLOR
+		case "GIT_REPO":
+			return GIT_REPO
+		case "GIT_BRANCH":
+			return GIT_BRANCH
 		default:
 			return NOIDEA
 		}
@@ -389,9 +411,12 @@ func extractPageFragments(webpath string, elements []Element) []string {
 	for _, el := range elements {
 		pf := PageFragment{webpath: webpath}
 		var rewrittenDest string
+		branchName := "master" // used for GIT_REPO
 		// var background string
 		for _, p := range el.pairs {
 			switch symbol(p.code) {
+			case GIT_BRANCH:
+				branchName = p.content
 			case PATH_WWWROOT:
 				rewrittenDest = p.content
 			case TITLE:
@@ -417,6 +442,56 @@ func extractPageFragments(webpath string, elements []Element) []string {
 
 		for _, p := range el.pairs {
 			switch symbol(p.code) {
+			case GIT_REPO:
+				setupBareRepo(p.content, filepath.Join(OUTPATH, "_git"), branchName)
+				repoName := filepath.Base(p.content)
+
+        if pf.title == "" {
+					pf.title = repoName
+				}
+
+				// check for readme variants to render
+				readmeVariations := []string{"README.md", "readme.md", "README"}
+				checkReadmeExists := func (p string) bool {
+					_, err := os.Stat(p)
+					if err != nil && errors.Is(err, os.ErrNotExist) {
+						return false
+						// alright this is the case when we want to continue! :)
+					}
+					return true
+				}
+				for _, readme := range readmeVariations {
+					readmePath := filepath.Join(p.content, readme)
+					exists := checkReadmeExists(readmePath)
+					rewrittenDest = repoName
+					if exists {
+						pf.location = readmePath
+						// yank'd out of CopyMarkdownFile so we can inject the git clone instruction
+						filename, _ := extractFilenames(pf.location)
+						md, err := ReadMarkdownFile(filename)
+						util.Check(err)
+						lines := strings.Split(md.contents, "\n")
+						injected := fmt.Sprintf(`<div id="clone"><span>get the code:</span><code>git clone https://git.cblgh.org/%s.git</code></div>`, repoName)
+						if strings.Contains(lines[0], "<h1>") {
+							newLines := []string{lines[0], injected}
+							newLines = append(newLines, lines[1:]...)
+							md.contents = strings.Join(newLines, "\n")
+						} else {
+							newLines := []string{injected}
+							newLines = append(newLines, lines...)
+							md.contents = strings.Join(newLines, "\n")
+						}
+						err = WriteMarkdownAsHTML(pf, rewrittenDest, md)
+						util.Check(err)
+
+						_, articleName := extractFilenames(p.content)
+						if rewrittenDest != "" {
+							articleName = rewrittenDest
+						}
+						pf.link = filepath.Join("/", articleName)
+						break
+					}
+				}
 			case COPY_DIR:
 				// copy a directory from one place and into plain's webroot
 				echo("copying directory at", p.content)
@@ -647,6 +722,77 @@ func ReadMarkdownFile(filename string) (mdFile, error) {
 	paths := extractImagePaths(b)
 	b = transformWikilinks(b)
 	return mdFile{contents: string(markdown.ToHTML(b, nil, nil)), images: paths}, nil
+}
+
+func setupBareRepo(repoSrcPath, dst, defaultBranch string) {
+	// make sure we have _git base folder
+	err := os.MkdirAll(dst, 0777)
+	util.Check(err)
+	cwd, err := os.Getwd()
+	util.Check(err)
+	bareRepoPath := filepath.Join(cwd, dst, fmt.Sprintf("%s.git", filepath.Base(repoSrcPath)))
+	echo("git bare repo", bareRepoPath)
+	// check if we've already setup the repo
+	_, err = os.Stat(bareRepoPath)
+	if err != nil && errors.Is(err, os.ErrNotExist) {
+		// alright this is the case when we want to continue! :)
+	} else if err == nil {
+		return
+	}
+
+	// --bare cloning
+	cmd := exec.Command("git", "clone", "--bare", repoSrcPath, bareRepoPath)
+	var out strings.Builder
+	cmd.Stderr = &out
+	err = cmd.Run()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	echo("git clone:", out.String())
+	out.Reset()
+
+	// moving post-update
+	updateHook := filepath.Join(bareRepoPath, "hooks", "post-update")
+	err = os.Rename(fmt.Sprintf("%s.sample", updateHook), updateHook)
+	if err != nil {
+		fmt.Println("failed to rename post-update.sample")
+		log.Fatalln(err)
+	} else {
+		echo("post-update hook enabled")
+	}
+
+	// running git update-serve-info
+	cmd = exec.Command("git", "update-server-info")
+	cmd.Dir = bareRepoPath
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println("failed to run update-server-info")
+		log.Fatalln(err)
+	} else {
+		echo("update-server-info done")
+	}
+
+	// creating local remote
+	cmd = exec.Command("git", "remote", "add", "local", bareRepoPath)
+	cmd.Dir = repoSrcPath
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println("failed to add remote local")
+	} else {
+		echo("remote local added")
+	}
+
+	// write post-commit hook
+	commitHook := fmt.Sprintf(`#!/bin/bash
+	git push local %s
+	`, defaultBranch)
+	err =	os.WriteFile(filepath.Join(repoSrcPath, ".git", "hooks", "post-commit"), []byte(commitHook), 0777)
+	if err != nil {
+		fmt.Println("failed to add post-commit to source repository")
+	log.Fatalln(err)
+	} else {
+		echo("post-commit hook written")
+	}
 }
 
 func wrap(pf PageFragment, html string) string {

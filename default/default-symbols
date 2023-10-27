@@ -14,3 +14,5 @@ sf  FOREGROUND_COLOR foreground color (set foreground)
 sb  BACKGROUND_COLOR background color (set background)
 sl  LINK_COLOR       link color (set link)
 as  ALIAS            redirects from route /<something> to route /<entirely-something-else> (as defined by PATH_MD)
+gt  GIT_REPO         processes a git repository at the given location so that it may be git cloned over http
+br  GIT_BRANCH       default git repository branch (defaults to master if unset)
