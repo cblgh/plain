@@ -445,6 +445,7 @@ func extractPageFragments(webpath string, elements []Element) []string {
 			case GIT_REPO:
 				setupBareRepo(p.content, filepath.Join(OUTPATH, "_git"), branchName)
 				repoName := filepath.Base(p.content)
+				stats := produceRepoStatistics(p.content, filepath.Join(OUTPATH, "_git"))
 
 				if pf.title == "" {
 					pf.title = repoName
@@ -471,7 +472,7 @@ func extractPageFragments(webpath string, elements []Element) []string {
 						md, err := ReadMarkdownFile(filename)
 						util.Check(err)
 						lines := strings.Split(md.contents, "\n")
-						injected := fmt.Sprintf(`<div id="clone"><span>get the code:</span><code>git clone https://git.cblgh.org/%s.git</code></div>`, repoName)
+						injected := fmt.Sprintf(`<div id="clone"><span>%s</span><span>git clone http://git.%s/%s.git</span></div>`, stats, canonicalUrl, repoName)
 						if strings.Contains(lines[0], "<h1>") {
 							newLines := []string{lines[0], injected}
 							newLines = append(newLines, lines[1:]...)
@@ -721,6 +722,60 @@ func ReadMarkdownFile(filename string) (mdFile, error) {
 	paths := extractImagePaths(b)
 	b = transformWikilinks(b)
 	return mdFile{contents: string(markdown.ToHTML(b, nil, nil)), images: paths}, nil
+}
+
+func produceRepoStatistics (repoSrcPath, dst string) string {
+	cwd, err := os.Getwd()
+	util.Check(err)
+	bareRepoPath := filepath.Join(cwd, dst, fmt.Sprintf("%s.git", filepath.Base(repoSrcPath)))
+	echo("git repo statistics", bareRepoPath)
+
+	// equivalent to running the following in a bash script:
+	// COMMITS=$(git rev-list --count HEAD)
+	// SIZE=$(git count-objects -H | cut -d',' -f2-)
+	// FILES=$(git ls-tree --full-tree -r HEAD | wc -l)
+
+	// count commits
+	cmd := exec.Command("git", "rev-list", "--count", "HEAD")
+	var out strings.Builder
+	cmd.Stdout = &out
+	cmd.Dir = bareRepoPath
+
+	err = cmd.Run()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	commits := strings.TrimSpace(out.String())
+	out.Reset()
+	echo("commits counted")
+
+	// get repo size
+	cmd = exec.Command("git", "count-objects", "-H")
+	cmd.Stdout = &out
+	cmd.Dir = bareRepoPath
+
+	err = cmd.Run()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	size := strings.TrimSpace(strings.Split(out.String(), ",")[1])
+	out.Reset()
+	echo("repo size estimated")
+
+	// count files
+	cmd = exec.Command("git", "ls-tree", "--full-tree", "-r", "HEAD")
+	cmd.Stdout = &out
+	cmd.Dir = bareRepoPath
+
+	err = cmd.Run()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	count := strings.Count(out.String(), "\n")
+	out.Reset()
+	echo("files counted")
+
+	return fmt.Sprintf("%s commits, %d files, %s", commits, count, size)
 }
 
 func setupBareRepo(repoSrcPath, dst, defaultBranch string) {
