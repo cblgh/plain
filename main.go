@@ -81,10 +81,13 @@ const (
 	/* cp */ COPY_DIR
 	/* mv */ REDIRECT /* redirects a something.html to a /something/index.html route
 	/* as */ALIAS /* redirects from a route /something to a route /entirely-something-else (defined by md)*/
+	/* rn */RENAME /* renames a filename from the input source to a completely new filename, decoupling source filename from route name */
+	/* un */ UNDER_CATEGORY
 	/* cc */ CREATE_RSS
 	/* bg */ BACKGROUND
 	/* sf */ FOREGROUND_COLOR
 	/* sb */ BACKGROUND_COLOR
+	/* hi */ HEADER_IMAGE
 	/* sl */ LINK_COLOR
 	/* gt */ GIT_REPO
 	/* br */ GIT_BRANCH
@@ -112,16 +115,19 @@ type Theme struct {
 
 type PageFragment struct {
 	theme              Theme
+	underParent				 bool
 	title, brief, link string
 	background         string
 	webpath, contents  string
 	location           string
+	metadata					 []string
 }
 
 type Page struct {
 	html          []string
 	headerContent []string
 	pf            PageFragment
+	parentDir		  bool
 }
 
 type mdFile struct {
@@ -162,6 +168,10 @@ func parseSymbols() {
 			return REDIRECT
 		case "ALIAS":
 			return ALIAS
+		case "RENAME":
+			return RENAME
+		case "UNDER_CATEGORY":
+			return UNDER_CATEGORY
 		case "CREATE_RSS":
 			return CREATE_RSS
 		case "BACKGROUND":
@@ -170,6 +180,8 @@ func parseSymbols() {
 			return FOREGROUND_COLOR
 		case "BACKGROUND_COLOR":
 			return BACKGROUND_COLOR
+		case "HEADER_IMAGE":
+			return HEADER_IMAGE
 		case "LINK_COLOR":
 			return LINK_COLOR
 		case "GIT_REPO":
@@ -354,11 +366,11 @@ func htmlPreamble(pf PageFragment) string {
 	} else {
 		header = strings.ReplaceAll(header, backgroundSentinel, "")
 	}
+	var htmlMeta string
 	// augment html meta tags and titles with article metadata.
 	// grab unaugmented <title>
 	match := titlePattern.FindStringSubmatch(header)
 	if len(match) >= 3 {
-		var htmlMeta string
 		if pf.title != "" {
 			htmlMeta += fmt.Sprintf(`<title>%s — %s</title>%s`, pf.title, match[2], "\n")
 		}
@@ -382,9 +394,14 @@ func htmlPreamble(pf PageFragment) string {
 			htmlMeta += og.GenerateMetadata(pf.title, pf.brief, canonicalPath, settings)
 			// og.GenerateImage(pf.title, pf.brief, imagePath, settings)
 		}
-		if htmlMeta != "" {
-			header = strings.Replace(header, match[1], htmlMeta, -1)
-		}
+	}
+	// add other metadata, such as the experimental vcs discovery meta tags for repos
+	if len(pf.metadata) > 0 {
+		htmlMeta += strings.Join(pf.metadata, "\n")
+	}
+
+	if htmlMeta != "" {
+		header = strings.Replace(header, match[1], htmlMeta, -1)
 	}
 	return fmt.Sprintf(`%s
   <nav>
@@ -404,12 +421,13 @@ func htmlEpilogue() string {
 
 var OUTPATH = filepath.Join(".", "web")
 
-func extractPageFragments(webpath string, elements []Element) []string {
+func extractPageFragments(webpath string, underParent bool, elements []Element) []string {
 	// TODO: do 2 pass to identify alternate write paths for PATH_MD / COPY_DIR, as set by LINK tag?
 	var html []string
 	html = append(html, "<dl class='listicle'>")
 	for _, el := range elements {
-		pf := PageFragment{webpath: webpath}
+		pf := PageFragment{webpath: webpath, underParent: underParent}
+		pf.metadata = make([]string, 0)
 		var rewrittenDest string
 		branchName := "master" // used for GIT_REPO
 		// var background string
@@ -451,6 +469,13 @@ func extractPageFragments(webpath string, elements []Element) []string {
 					pf.title = repoName
 				}
 
+				clonePath := fmt.Sprintf(`http://git.%s/%s.git`, canonicalUrl, repoName)
+				// support VCS Autodiscovery (https://git.sr.ht/~ancarda/vcs-autodiscovery-rfc)
+				pf.metadata = append(pf.metadata, `<meta name="vcs" content="git" />`)
+				pf.metadata = append(pf.metadata, fmt.Sprintf(`<meta name="vcs:default-branch" content="%s" />`, branchName))
+				pf.metadata = append(pf.metadata, fmt.Sprintf(`<meta name="vcs:clone" content="%s" />`, clonePath))
+				pf.metadata = append(pf.metadata, fmt.Sprintf(`<meta name="forge:summary" content="https://%s/%s">`, canonicalUrl, repoName))
+
 				// check for readme variants to render
 				readmeVariations := []string{"README.md", "readme.md", "README"}
 				checkReadmeExists := func(p string) bool {
@@ -472,7 +497,7 @@ func extractPageFragments(webpath string, elements []Element) []string {
 						md, err := ReadMarkdownFile(filename)
 						util.Check(err)
 						lines := strings.Split(md.contents, "\n")
-						injected := fmt.Sprintf(`<div id="clone"><span>%s</span><span>git clone http://git.%s/%s.git</span></div>`, stats, canonicalUrl, repoName)
+						injected := fmt.Sprintf(`<div id="clone"><span>%s</span><span>git clone %s</span></div>`, stats, clonePath)
 						if strings.Contains(lines[0], "<h1>") {
 							newLines := []string{lines[0], injected}
 							newLines = append(newLines, lines[1:]...)
@@ -519,11 +544,18 @@ func extractPageFragments(webpath string, elements []Element) []string {
 					articleName = rewrittenDest
 				}
 				pf.link = filepath.Join("/", articleName)
+				if pf.underParent {
+					pf.link = filepath.Join("/", pf.webpath, articleName)
+				}
 			case REDIRECT:
 				err := DumpRedirectFile(p.content)
 				util.Check(err)
 			case ALIAS:
 				err := DumpAliasFile(p.content, pf.link)
+				util.Check(err)
+			case RENAME:
+				err := RenameFile(pf.link, p.content)
+				pf.link = filepath.Join("/", p.content)
 				util.Check(err)
 			}
 		}
@@ -650,6 +682,32 @@ func DumpRedirectFile(webpath string) error {
 	return nil
 }
 
+func RenameFile(oldpath, newpath string) error {
+	oldpath = filepath.Join(OUTPATH, oldpath)
+	newpath = filepath.Join(OUTPATH, newpath)
+	info, err := os.Stat(newpath)
+	if errors.Is(err, os.ErrNotExist) {
+	// the destination does not exist, great! we can proceed. if it's some other kind of error, we should just throw it
+	}
+	if info != nil && info.IsDir() {
+		err = os.RemoveAll(newpath)
+		if err != nil {
+			return err
+		}
+	}
+	// if we get a fileinfo back we know that the directory exists and we basically want to overwrite it -> let's do it
+	err = os.Rename(oldpath, newpath)
+	if err != nil {
+		return err
+	}
+	// make sure the old dir is removed
+	err = os.Remove(oldpath)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
+}
+
 func DumpAliasFile(aliasPath, webpath string) error {
 	var outfile string
 	var dst string
@@ -684,34 +742,48 @@ func WriteMarkdownAsHTML(pf PageFragment, rewrittenDest string, md mdFile) error
 		articleName = rewrittenDest
 	}
 	outfile := filepath.Join(OUTPATH, articleName, "index.html")
+	if pf.underParent {
+		outfile = filepath.Join(OUTPATH, pf.webpath, articleName, "index.html")
+	}
 
 	echo("try to open", filename)
 	err := os.MkdirAll(filepath.Dir(outfile), 0777)
 	if err != nil {
 		return err
 	}
+
 	if len(md.images) > 0 {
-		echo("copying images")
-		mediabase := "media"
-		mediadir := filepath.Join(OUTPATH, mediabase)
-		// make sure the <OUTPATH>/media dir exists
-		err := os.MkdirAll(mediadir, 0777)
+		err = persistImages(pf.location, md)
 		if err != nil {
 			return err
 		}
-		// copy all images from their source to mediadir
-		for _, img := range md.images {
-			base := strings.Split(filepath.ToSlash(pf.location), "/")[0]
-			src := filepath.Join(base, img)
-			dst := filepath.Join(mediadir, filepath.Base(img))
-			echo(fmt.Sprintf("copying %s to %s\n", src, dst))
-			copyFile(src, dst)
-		}
-		md.rewriteImageUrls(mediabase)
 	}
+
 	echo("writing file contents to", outfile)
 	err = os.WriteFile(outfile, []byte(wrap(pf, md.contents)), 0666)
 	return err
+}
+
+
+func persistImages (baseLocation string, md mdFile) error {
+	echo("persisting images")
+	mediabase := "media"
+	mediadir := filepath.Join(OUTPATH, mediabase)
+	// make sure the <OUTPATH>/media dir exists
+	err := os.MkdirAll(mediadir, 0777)
+	if err != nil {
+		return err
+	}
+	// copy all images from their source to mediadir
+	for _, img := range md.images {
+		base := strings.Split(filepath.ToSlash(baseLocation), "/")[0]
+		src := filepath.Join(base, img)
+		dst := filepath.Join(mediadir, filepath.Base(img))
+		echo(fmt.Sprintf("copying %s to %s\n", src, dst))
+		copyFile(src, dst)
+	}
+	md.rewriteImageUrls(mediabase)
+	return nil
 }
 
 func ReadMarkdownFile(filename string) (mdFile, error) {
@@ -879,6 +951,12 @@ func readListicle(filename string) []Element {
 
 var navElements []navigation
 
+func headerImageTemplate (imgPath string) string {
+	return fmt.Sprintf(`
+	<div class="header-image" style="background-image: url('%s');"></div>
+	`, imgPath)
+}
+
 func processRootListicle(elements []Element) {
 	var feeds []feedDescription
 	var pages = make(map[string]Page) // a mapping from the declared page route to the page object
@@ -919,12 +997,18 @@ func processRootListicle(elements []Element) {
 		var page Page
 		for _, p := range el.pairs {
 			switch symbol(p.code) {
+			case UNDER_CATEGORY:
+				page.parentDir = true
 			case PATH_WWWROOT:
 				// TODO (2023-02-02): remove page.webpath bc now duplicate of pf
 				page.pf.webpath = p.content
 			case TITLE:
 				page.headerContent = append(page.headerContent, markup(p.content))
 				page.pf.title = util.SanitizeMarkdown(p.content)
+			case HEADER_IMAGE:
+				dstPath := filepath.Join("/media", filepath.Base(p.content))
+				page.headerContent = append(page.headerContent, headerImageTemplate(dstPath))
+				persistImages(p.content, mdFile{images: []string{dstPath}})
 			case BRIEF:
 				page.headerContent = append(page.headerContent, markup(p.content))
 				page.pf.brief = util.SanitizeMarkdown(p.content)
@@ -942,6 +1026,9 @@ func processRootListicle(elements []Element) {
 					echo(fmt.Errorf("%w", err))
 					continue
 				}
+				if len(md.images) > 0 {
+					persistImages(p.content, md)
+				}
 				page.html = append(page.html, md.contents)
 			case PATH_SSG:
 				resource := readListicle(p.content)
@@ -950,7 +1037,7 @@ func processRootListicle(elements []Element) {
 					echo(fmt.Sprintf("error [grouping #%d]: cf (%s) declared before ww for pair %v\n", i+1, p.content, el.pairs))
 					os.Exit(0)
 				}
-				page.html = append(page.html, extractPageFragments(page.pf.webpath, resource)...)
+				page.html = append(page.html, extractPageFragments(page.pf.webpath, page.parentDir, resource)...)
 			case REDIRECT:
 				err := DumpRedirectFile(p.content)
 				util.Check(err)
@@ -1016,7 +1103,7 @@ func persistToFS(pages map[string]Page) {
 		if len(page.html) == 0 {
 			continue
 		}
-		dirname := filepath.Join(OUTPATH, strings.TrimSpace(strings.TrimPrefix(route, "/")))
+		dirname := filepath.Join(OUTPATH, strings.TrimPrefix(route, "/"))
 		filename := filepath.Join(dirname, "index.html")
 		err := os.MkdirAll(dirname, 0777)
 		util.Check(err)

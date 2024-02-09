@@ -16,3 +16,6 @@ sl  LINK_COLOR       link color (set link)
 as  ALIAS            redirects from route /<something> to route /<entirely-something-else> (as defined by PATH_MD)
 gt  GIT_REPO         processes a git repository at the given location so that it may be git cloned over http
 br  GIT_BRANCH       default git repository branch (defaults to master if unset)
+rn  RENAME           rename a file from the filename defined by PATH_MD to the filename specified by RENAME (excluding .md)
+un  UNDER_CATEGORY   create a parent category under which posts will be referenced; e.g. »un posts» -> /posts/one, /posts/two
+hi  HEADER_IMAGE     display a header image at the top of listicles
