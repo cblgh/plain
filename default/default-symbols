@@ -19,3 +19,4 @@ br  GIT_BRANCH       default git repository branch (defaults to master if unset)
 rn  RENAME           rename a file from the filename defined by PATH_MD to the filename specified by RENAME (excluding .md)
 un  UNDER_CATEGORY   create a parent category under which posts will be referenced; e.g. »un posts» -> /posts/one, /posts/two
 hi  HEADER_IMAGE     display a header image at the top of listicles
+vb  VERBATIM         copy as it is and dump it into the webroot

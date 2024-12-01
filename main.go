@@ -68,6 +68,7 @@ func echo(s ...interface{}) {
 // // comment, skip this
 // gt git repo
 // br git branch
+// vb verbatim - verbatim copy a file and dump it at destination
 
 const (
 	/* tt */ TITLE = iota
@@ -77,6 +78,7 @@ const (
 	/* nn */ NAVIGATION_TITLE
 	/* cf */ PATH_SSG
 	/* md */ PATH_MD
+	/* vb */ VERBATIM
 	/* ww */ PATH_WWWROOT
 	/* cp */ COPY_DIR
 	/* mv */ REDIRECT /* redirects a something.html to a /something/index.html route
@@ -164,6 +166,8 @@ func parseSymbols() {
 			return PATH_WWWROOT
 		case "COPY_DIR":
 			return COPY_DIR
+		case "VERBATIM":
+			return VERBATIM
 		case "REDIRECT":
 			return REDIRECT
 		case "ALIAS":
@@ -528,6 +532,24 @@ func extractPageFragments(webpath string, underParent bool, elements []Element) 
 				err := CopyDirectory(p.content, OUTPATH, rewrittenDest)
 				util.Check(err)
 				base := filepath.Base(p.content)
+				if rewrittenDest != "" {
+					base = rewrittenDest
+				}
+				pf.link = filepath.Join("/", base)
+			case VERBATIM:
+				// TODO (2024-04-27): MAKE THIS WORK
+				// INCLUDING COMPOSING WELL WITH THE REWRITE-Y COMMANDS LIKE 
+				// `un`
+
+				// copy a file from one place and into plain's webroot
+				echo("copying directory at", p.content)
+				if p.content == "/" || p.content == "~" {
+					echo(fmt.Sprintf("tried to copy '%s'; stopped the operation as it seems unlikely to be correct :)", p.content))
+					continue
+				}
+				base := filepath.Base(p.content)
+				dstpath := filepath.Join(OUTPATH, base)
+				copyFile(p.content, dstpath)
 				if rewrittenDest != "" {
 					base = rewrittenDest
 				}
