@@ -975,7 +975,9 @@ var navElements []navigation
 
 func headerImageTemplate (imgPath string) string {
 	return fmt.Sprintf(`
-	<div class="header-image" style="background-image: url('%s');"></div>
+	<div>
+	<img class="header-image" src="%s">
+	</div>
 	`, imgPath)
 }
 
