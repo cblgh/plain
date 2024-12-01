@@ -98,6 +98,7 @@ const (
 
 type feedDescription struct {
 	name, description string
+	nested bool
 }
 
 type Pair struct {
@@ -990,15 +991,18 @@ func processRootListicle(elements []Element) {
 	for _, el := range elements {
 		var navEl navigation
 		var listicleName string
+		var nestUnderParent bool
 		for _, p := range el.pairs {
 			switch symbol(p.code) {
+			case UNDER_CATEGORY:
+				nestUnderParent = true
 			case PATH_SSG:
 				listicleName = p.content
 			case CREATE_RSS:
 				if listicleName == "" {
 					fmt.Println("plain: listicle name was empty! did the create_rss (cc) directive come before the listicle declaration (cf)?")
 				}
-				feeds = append(feeds, feedDescription{name: listicleName, description: p.content})
+				feeds = append(feeds, feedDescription{name: listicleName, nested: nestUnderParent, description: p.content})
 			case NAVIGATION_TITLE:
 				navEl.text = p.content
 			case PATH_WWWROOT:
@@ -1243,7 +1247,7 @@ var rssmap map[string]rss.FeedItem
 
 const rfc822RSS = "Mon, 02 Jan 2006 15:04:05 -0700"
 
-func extractListicleFeedPosts(listicle, canonicalURL string) []rss.FeedItem {
+func extractListicleFeedPosts(listicle, nested, canonicalURL string) []rss.FeedItem {
 	pubdate := time.Now()
 	elements := readListicle(listicle)
 
@@ -1257,7 +1261,11 @@ func extractListicleFeedPosts(listicle, canonicalURL string) []rss.FeedItem {
 			case BRIEF:
 				pf.brief = util.SanitizeMarkdown(p.content)
 			case PATH_MD:
-				pf.link = util.ConstructURL(canonicalURL, strings.TrimSuffix(filepath.Base(p.content), ".md"))
+				linkPath := strings.TrimSuffix(filepath.Base(p.content), ".md")
+				if nested != "" {
+					linkPath = fmt.Sprintf("%s/%s", nested, linkPath)
+				}
+				pf.link = util.ConstructURL(canonicalURL, linkPath)
 			case LINK:
 				if !strings.HasPrefix(p.content, "http") {
 					pf.link = util.ConstructURL(canonicalURL, p.content)
@@ -1306,7 +1314,11 @@ func GenerateFeeds(listicles []feedDescription, canonicalURL string) {
 		if listicle.name == "all" {
 			continue
 		}
-		items := extractListicleFeedPosts(listicle.name, canonicalURL)
+		var nestedPath string
+		if listicle.nested {
+			nestedPath = listicle.name
+		}
+		items := extractListicleFeedPosts(listicle.name, nestedPath, canonicalURL)
 		dumpFeed(listicle.name, listicle.description, items)
 		combined = append(combined, items...)
 	}
