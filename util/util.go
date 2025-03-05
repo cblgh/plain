@@ -14,6 +14,10 @@ func TrimUrl(u string) string {
 
 func ConstructURL(canonicalURL, path string) string {
 	u, err := url.Parse(canonicalURL)
+	if len(u.Scheme) == 0 {
+		u.Scheme = "https"
+		u.Host = canonicalURL
+	}
 	Check(err)
 	u.Path = path
 	return u.String()
