@@ -3,6 +3,7 @@ package util
 import (
 	"log"
 	"net/url"
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -13,13 +14,13 @@ func TrimUrl(u string) string {
 }
 
 func ConstructURL(canonicalURL, path string) string {
-	u, err := url.Parse(canonicalURL)
-	if len(u.Scheme) == 0 {
-		u.Scheme = "https"
-		u.Host = canonicalURL
+	if !strings.HasPrefix(canonicalURL, "http") {
+		canonicalURL = "https://" + canonicalURL
 	}
+	u, err := url.Parse(canonicalURL)
 	Check(err)
 	u.Path = path
+	fmt.Println(u.String())
 	return u.String()
 }
 

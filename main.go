@@ -1234,6 +1234,11 @@ func main() {
 	flag.BoolVar(&verbose, "v", false, "toggle messages when running")
 	flag.Parse()
 
+	// make sure canonical url has a scheme. http-centric for now, change if it ever is raised as an issue
+	if !strings.HasPrefix(canonicalUrl, "http") {
+		canonicalUrl = fmt.Sprintf("https://%s", canonicalUrl)
+	}
+
 	parseSymbols()
 	err := os.MkdirAll(OUTPATH, 0777)
 	util.Check(err)
