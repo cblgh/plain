@@ -76,10 +76,10 @@ func GetItems(items []FeedItem) []string {
 }
 
 const RSS_ITEM = `<item>
-  <title>%s</title>
-  <link>%s</link>
-  <description>%s</description>
-  <pubDate>%s</pubDate>
+  <title><![CDATA[%s]]></title>
+  <link><![CDATA[%s]]></link>
+  <description><![CDATA[%s]]></description>
+  <pubDate><![CDATA[%s]]></pubDate>
 </item>`
 
 func OutputRSSItem(pubdate, title, brief, link string) string {
