@@ -20,6 +20,7 @@ import (
 	"github.com/gomarkdown/markdown"
 	"io"
 	"io/fs"
+	"net/url"
 	"log"
 	"os"
 	"os/exec"
@@ -474,7 +475,7 @@ func extractPageFragments(webpath string, underParent bool, elements []Element) 
 					pf.title = repoName
 				}
 
-				clonePath := fmt.Sprintf(`http://git.%s/%s.git`, canonicalUrl, repoName)
+				clonePath := fmt.Sprintf(`http://git.%s/%s.git`, host, repoName)
 				// support VCS Autodiscovery (https://git.sr.ht/~ancarda/vcs-autodiscovery-rfc)
 				pf.metadata = append(pf.metadata, `<meta name="vcs" content="git" />`)
 				pf.metadata = append(pf.metadata, fmt.Sprintf(`<meta name="vcs:default-branch" content="%s" />`, branchName))
@@ -1220,6 +1221,7 @@ func populateFiles() {
 }
 
 var canonicalUrl string
+var host string
 var generateOG bool
 var symbols map[string]int
 
@@ -1238,9 +1240,12 @@ func main() {
 	if !strings.HasPrefix(canonicalUrl, "http") {
 		canonicalUrl = fmt.Sprintf("https://%s", canonicalUrl)
 	}
+	u, err := url.Parse(canonicalUrl)
+	util.Check(err)
+	host = u.Host
 
 	parseSymbols()
-	err := os.MkdirAll(OUTPATH, 0777)
+	err = os.MkdirAll(OUTPATH, 0777)
 	util.Check(err)
 	index := readListicle("index")
 	processRootListicle(index)
