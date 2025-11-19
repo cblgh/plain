@@ -578,7 +578,8 @@ func extractPageFragments(webpath string, underParent bool, elements []Element) 
 				err := DumpAliasFile(p.content, pf.link)
 				util.Check(err)
 			case RENAME:
-				err := RenameFile(pf.link, p.content)
+				dirname := filepath.Dir(pf.link)
+				err := RenameFile(pf.link, filepath.Join(dirname, p.content))
 				pf.link = filepath.Join("/", p.content)
 				util.Check(err)
 			}
@@ -1276,8 +1277,16 @@ func extractListicleFeedPosts(listicle, nested, canonicalURL string) []rss.FeedI
 					linkPath = fmt.Sprintf("%s/%s", nested, linkPath)
 				}
 				pf.link = util.ConstructURL(canonicalURL, linkPath)
+			case RENAME:
+				u, err := url.Parse(pf.link)
+				util.Check(err)
+				segments := strings.Split(u.EscapedPath(), "/")
+				// replace last path segment with the renamed path
+				segments[len(segments)-1] = p.content
+				u.Path = strings.Join(segments, "/")
+				pf.link = u.String()
 			case LINK:
-				if !strings.HasPrefix(p.content, "http") {
+				if len(pf.link) == 0 && !strings.HasPrefix(p.content, "http") {
 					pf.link = util.ConstructURL(canonicalURL, p.content)
 				} else {
 					pf.link = p.content
