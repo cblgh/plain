@@ -250,6 +250,8 @@ func extractImagePaths(content []byte) []string {
 
 var wikilinksPattern = regexp.MustCompile(`(\[\[(.*?)\]\])`)
 
+// TODO (2026-05-22): improve this to actually search for the article instead
+// e.g. i want to support the case where i wikilinks [[article-name]] but it actually resides in -> /posts/article-name
 func transformWikilinks(content []byte) []byte {
 	s := string(content)
 	matches := wikilinksPattern.FindAllStringSubmatch(s, -1)
@@ -1294,8 +1296,22 @@ func extractListicleFeedPosts(listicle, nested, canonicalURL string) []rss.FeedI
 			}
 		}
 		if len(pf.link) > 0 {
-			id := filepath.Join(listicle, pf.title)
+			u, err := url.Parse(pf.link)
+			util.Check(err)
+			var id string
+			if len(u.Path) > 0 {
+				id = u.Path
+			} else {
+				id = u.Hostname()
+			}
 			item := rss.FeedItem{Pubdate: pubdate.Unix()}
+			// 2026-05-23: detect old style of rss-store identifier and migrate it
+			oldid := filepath.Join(listicle, pf.title)
+			if _, exists := rssmap[oldid]; exists {
+				// replace with previously stored rss.FeedItem
+				item = rssmap[oldid]
+				rssmap[id] = item
+			}
 			if _, exists := rssmap[id]; exists {
 				// replace with previously stored rss.FeedItem
 				item = rssmap[id]
@@ -1304,6 +1320,9 @@ func extractListicleFeedPosts(listicle, nested, canonicalURL string) []rss.FeedI
 				item.RSSItem = rss.OutputRSSItem(pubdate.Format(rfc822RSS), pf.title, pf.brief, pf.link)
 				rssmap[id] = item
 			}
+			// clean up old style from rss-store.json
+			delete(rssmap, pf.link)
+			delete(rssmap, oldid)
 			feed = append(feed, item)
 		}
 	}
