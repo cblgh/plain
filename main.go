@@ -250,8 +250,8 @@ func extractImagePaths(content []byte) []string {
 
 var wikilinksPattern = regexp.MustCompile(`(\[\[(.*?)\]\])`)
 
-// TODO (2026-05-22): improve this to actually search for the article instead
-// e.g. i want to support the case where i wikilinks [[article-name]] but it actually resides in -> /posts/article-name
+// TODO (2026-05-22): improve this to actually search for the article instead e.g. i want to support the case where i
+// wikilinks [[article-name]] but it actually resides in -> /posts/article-name
 func transformWikilinks(content []byte) []byte {
 	s := string(content)
 	matches := wikilinksPattern.FindAllStringSubmatch(s, -1)
@@ -647,7 +647,8 @@ func extractFilenames(location string) (string, string) {
 
 func (md *mdFile) rewriteImageUrls(mediadir string) {
 	for _, image := range md.images {
-		md.contents = strings.ReplaceAll(md.contents, image, filepath.Join("/", mediadir, filepath.Base(image)))
+		rewritten := filepath.Join("/", mediadir, filepath.Base(image))
+		md.contents = strings.ReplaceAll(md.contents, image, rewritten)
 	}
 }
 
@@ -780,7 +781,7 @@ func WriteMarkdownAsHTML(pf PageFragment, rewrittenDest string, md mdFile) error
 	}
 
 	if len(md.images) > 0 {
-		err = persistImages(pf.location, md)
+		err = md.persistImages(pf.location)
 		if err != nil {
 			return err
 		}
@@ -791,8 +792,7 @@ func WriteMarkdownAsHTML(pf PageFragment, rewrittenDest string, md mdFile) error
 	return err
 }
 
-
-func persistImages (baseLocation string, md mdFile) error {
+func (md *mdFile) persistImages (baseLocation string) error {
 	echo("persisting images")
 	mediabase := "media"
 	mediadir := filepath.Join(OUTPATH, mediabase)
@@ -1040,7 +1040,8 @@ func processRootListicle(elements []Element) {
 			case HEADER_IMAGE:
 				dstPath := filepath.Join("/media", filepath.Base(p.content))
 				page.headerContent = append(page.headerContent, headerImageTemplate(dstPath))
-				persistImages(p.content, mdFile{images: []string{dstPath}})
+				md := mdFile{images: []string{dstPath}}
+				md.persistImages(p.content)
 			case BRIEF:
 				page.headerContent = append(page.headerContent, markup(p.content))
 				page.pf.brief = util.SanitizeMarkdown(p.content)
@@ -1059,7 +1060,7 @@ func processRootListicle(elements []Element) {
 					continue
 				}
 				if len(md.images) > 0 {
-					persistImages(p.content, md)
+					md.persistImages(p.content)
 				}
 				page.html = append(page.html, md.contents)
 			case PATH_SSG:
