@@ -83,8 +83,8 @@ const (
 	/* ww */ PATH_WWWROOT
 	/* cp */ COPY_DIR
 	/* mv */ REDIRECT /* redirects a something.html to a /something/index.html route
-	/* as */ALIAS /* redirects from a route /something to a route /entirely-something-else (defined by md)*/
-	/* rn */RENAME /* renames a filename from the input source to a completely new filename, decoupling source filename from route name */
+	/* as */ ALIAS /* redirects from a route /something to a route /entirely-something-else (defined by md)*/
+	/* rn */ RENAME /* renames a filename from the input source to a completely new filename, decoupling source filename from route name */
 	/* un */ UNDER_CATEGORY
 	/* cc */ CREATE_RSS
 	/* bg */ BACKGROUND
@@ -1308,12 +1308,17 @@ func extractListicleFeedPosts(listicle, nested, canonicalURL string) []rss.FeedI
 			item := rss.FeedItem{Pubdate: pubdate.Unix()}
 			// 2026-05-23: detect old style of rss-store identifier and migrate it
 			oldid := filepath.Join(listicle, pf.title)
-			if _, exists := rssmap[oldid]; exists {
+			_, oldidExists := rssmap[oldid]
+			_, idExists := rssmap[id]
+			if oldidExists && !idExists { 
 				// replace with previously stored rss.FeedItem
 				item = rssmap[oldid]
 				rssmap[id] = item
+				// clean up old style from rss-store.json
+				delete(rssmap, pf.link)
+				delete(rssmap, oldid)
 			}
-			if _, exists := rssmap[id]; exists {
+			if idExists {
 				// replace with previously stored rss.FeedItem
 				item = rssmap[id]
 			} else {
@@ -1321,9 +1326,6 @@ func extractListicleFeedPosts(listicle, nested, canonicalURL string) []rss.FeedI
 				item.RSSItem = rss.OutputRSSItem(pubdate.Format(rfc822RSS), pf.title, pf.brief, pf.link)
 				rssmap[id] = item
 			}
-			// clean up old style from rss-store.json
-			delete(rssmap, pf.link)
-			delete(rssmap, oldid)
 			feed = append(feed, item)
 		}
 	}
